@@ -21,27 +21,27 @@ public class KafkaConsumer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(KafkaConsumer.class);
 
 	private CountDownLatch latch = new CountDownLatch(1);
-	private String payload = null;
+	private Object payload;
 
-	@KafkaListener(topics = "${test.topic}")
+	@KafkaListener(topics = "${test.topic}", groupId = "${group.id}", containerFactory = "kafkaListenerContainerFactory")
 	public void receive(ConsumerRecord<?, ?> consumerRecord) {
-		LOGGER.info("received payload='{}'", consumerRecord.toString());
-		setPayload(consumerRecord.toString());
+		LOGGER.info("received payload='{}'", consumerRecord);
+		setPayload(consumerRecord.value());
 		latch.countDown();
 	}
 
 	/**
 	 * @param string
 	 */
-	private void setPayload(String payload) {
-		this.payload = payload;
+	private void setPayload(Object object) {
+		this.payload = object;
 	}
 
 	public CountDownLatch getLatch() {
 		return latch;
 	}
 
-	public String getPayload() {
+	public Object getPayload() {
 		return payload;
 	}
 }
