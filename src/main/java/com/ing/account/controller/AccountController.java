@@ -21,6 +21,8 @@ import com.ing.account.exception.ResourceNotFoundException;
 import com.ing.account.model.AccountDto;
 import com.ing.account.service.AccountService;
 
+import reactor.core.publisher.Mono;
+
 /**
  * @author Nailesh
  *
@@ -33,27 +35,27 @@ public class AccountController {
 
 	@PostMapping(value = "/deposit/{amount}")
 	@ResponseStatus(value = HttpStatus.OK)
-	public AccountDto depositPositiveAmount(@RequestBody AccountDto accountDto, @PathVariable double amount) {
+	public Mono<AccountDto> depositPositiveAmount(@RequestBody AccountDto accountDto, @PathVariable double amount) {
 		if (amount < 0)
 			throw new AmountLessThanZeroException("Amount should be greater then zero!");
-		return accountService.depositpositiveAmount(accountDto, amount);
+		return Mono.just(accountService.depositpositiveAmount(accountDto, amount));
 	}
 
 	@PostMapping(value = "/withdraw/{amount}")
 	@ResponseStatus(value = HttpStatus.OK)
-	public AccountDto withdrawAmountFromAccount(@RequestBody AccountDto accountDto, @PathVariable double amount)
+	public Mono<AccountDto> withdrawAmountFromAccount(@RequestBody AccountDto accountDto, @PathVariable double amount)
 			throws ResourceNotFoundException {
 		AccountDto accountBalanceDto = accountService.getAccountDetailsByAccountNumber(accountDto.getAccountNumber());
 		if (accountBalanceDto.getBalance() < 500.0)
 			throw new AccountBalanceLessThan500Exception("Account balance is less then Rs.500 !");
-		return accountService.withdrawAmount(accountDto, amount);
+		return Mono.just(accountService.withdrawAmount(accountDto, amount));
 	}
 
 	@GetMapping("/statement")
 	@ResponseStatus(value = HttpStatus.OK)
-	public AccountDto accountStatementByDateRange(@RequestParam String startDate, @RequestParam String toDate,
+	public Mono<AccountDto> accountStatementByDateRange(@RequestParam String startDate, @RequestParam String toDate,
 			@RequestParam String accountNumber) throws ResourceNotFoundException {
-		return accountService.getAccountTransactionsByDate(LocalDate.parse(startDate), LocalDate.parse(toDate),
-				accountNumber);
+		return Mono.just(accountService.getAccountTransactionsByDate(LocalDate.parse(startDate), LocalDate.parse(toDate),
+				accountNumber));
 	}
 }

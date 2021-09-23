@@ -3,9 +3,9 @@
  */
 package com.ing.account;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -13,31 +13,32 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ing.account.controller.AccountController;
 import com.ing.account.model.AccountDto;
 import com.ing.account.model.CustomerDto;
 import com.ing.account.service.AccountService;
+
+import reactor.core.publisher.Mono;
 
 /**
  * @author Nailesh
  *
  */
-@WebMvcTest(AccountController.class)
+//@WebMvcTest(AccountController.class)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class AccountControllerTest {
 
+	//@Autowired
+	//MockMvc mockMvc;
 	@Autowired
-	MockMvc mockMvc;
+	WebTestClient webClient;
 	@MockBean
 	private AccountService accountService;
 	private CustomerDto customerDto = new CustomerDto(1L, "Nailesh", "Jadhav", addAccountDto(), false);
@@ -56,6 +57,66 @@ class AccountControllerTest {
 	}
 
 	@Test
+	void depositPositiveAmount() throws JsonProcessingException, Exception {
+		when(accountService.depositpositiveAmount(accountDto, amount)).thenReturn(depositDto);
+		webClient.post().uri("/deposit/{amount}", 100.0d).contentType(MediaType.APPLICATION_JSON)
+				.body(Mono.just(accountDto), AccountDto.class).exchange().expectStatus().isOk()
+				.expectBody(AccountDto.class).value(dto -> assertThat(dto.getBalance() == 2100.0));
+	}
+
+	@Test
+	void depositNegativeAmount() throws JsonProcessingException, Exception {
+		webClient.post()
+		.uri("/deposit/{amount}", -100.0d)
+		.contentType(MediaType.APPLICATION_JSON)
+		.body(Mono.just(accountDto), AccountDto.class)
+		.exchange()
+		.expectStatus()
+		.isEqualTo(HttpStatus.NOT_ACCEPTABLE)
+		.expectBody(String.class).value(string -> containsString("Amount should be greater then zero!"));
+	}
+
+	@Test
+	void withdrawAmountFromAccount() throws JsonProcessingException, Exception {
+		when(accountService.getAccountDetailsByAccountNumber("SA1001")).thenReturn(withDrawDto);
+		when(accountService.withdrawAmount(accountDto, amount)).thenReturn(withDrawDto);
+		webClient.post().uri("/withdraw/{amount}", amount).contentType(MediaType.APPLICATION_JSON)
+		.body(Mono.just(accountDto), AccountDto.class)
+		.exchange()
+		.expectStatus().isOk()
+		.expectBody(AccountDto.class).value(dto -> assertThat(dto.getBalance() == 1900.0));
+	}
+
+	@Test
+	void accountBalanceLessThan500() throws JsonProcessingException, Exception {
+		when(accountService.getAccountDetailsByAccountNumber("SA1001")).thenReturn(lessBalanceDto);
+		webClient.post().uri("/withdraw/{amount}", amount).contentType(MediaType.APPLICATION_JSON)
+		.body(Mono.just(accountDto), AccountDto.class)
+		.exchange()
+		.expectStatus()
+		.isEqualTo(HttpStatus.NOT_ACCEPTABLE)
+		.expectBody(String.class).value(string -> containsString("Account balance is less then Rs.500 !"));
+	}
+
+	@Test
+	void showAllTransactionFromAccountByDate() throws JsonProcessingException, Exception {
+		when(accountService.getAccountTransactionsByDate(LocalDate.of(2021, 8, 1), LocalDate.of(2021, 9, 1), "SA1001"))
+				.thenReturn(accountDto);
+		webClient.get()
+				.uri(uriBuilder -> uriBuilder
+			    .path("/statement")
+			    .queryParam("startDate", LocalDate.of(2021, 8, 1).toString())
+			    .queryParam("toDate", LocalDate.of(2021, 9, 1).toString())
+			    .queryParam("accountNumber", "SA1001")
+			    .build())
+				.accept(MediaType.APPLICATION_JSON)
+				.exchange()
+				.expectStatus().isOk()
+				.expectBody(AccountDto.class)
+				.value(dto -> assertThat(dto.getBalance() == 2000.0));
+	}
+	/*
+	 * 	@Test
 	void depositPositiveAmount() throws JsonProcessingException, Exception {
 		when(accountService.depositpositiveAmount(accountDto, amount)).thenReturn(depositDto);
 		mockMvc.perform(MockMvcRequestBuilders.post("/deposit/{amount}", 100.0d).content(asJsonString(accountDto))
@@ -93,10 +154,6 @@ class AccountControllerTest {
 	void showAllTransactionFromAccountByDate() throws JsonProcessingException, Exception {
 		when(accountService.getAccountTransactionsByDate(LocalDate.of(2021, 5, 1), LocalDate.of(2021, 7, 1), "SA1001"))
 				.thenReturn(accountDto);
-//		mockMvc.perform(MockMvcRequestBuilders.get("/statement").param("startDate", LocalDate.of(2021, 5, 1).toString())
-//				.param("toDate", LocalDate.of(2021, 7, 1).toString()).param("accountNumber", "SA1001")
-//				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
-//				.andExpect(MockMvcResultMatchers.jsonPath("$.balance").value(2000.0));
 		mockMvc.perform(MockMvcRequestBuilders.get("/statement").param("startDate", LocalDate.of(2021, 5, 1).toString())
 				.param("toDate", LocalDate.of(2021, 7, 1).toString()).param("accountNumber", "SA1001")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
@@ -108,4 +165,7 @@ class AccountControllerTest {
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 		return objectMapper.writeValueAsString(obj);
 	}
+	 * 
+	 */
+
 }
