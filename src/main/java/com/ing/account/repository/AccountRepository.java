@@ -4,6 +4,7 @@
 package com.ing.account.repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
@@ -23,7 +24,13 @@ public interface AccountRepository extends CrudRepository<Account, String> {
 	 * @return
 	 */
 	@Query(nativeQuery = true, value = "select a.accountNumber,a.transactioDate,a.transactioType,a.balance from Account a where a.transactioDate=:startDate and transactioDate=:toDate and accountNumber=:accountNumber")
-	Optional<Account> findByTransactionDateAndAccountNumber(@Param("startDate") LocalDate startDate, @Param("toDate") LocalDate toDate,
-			@Param("accountNumber") String accountNumber);
+	Optional<Account> findByTransactionDateAndAccountNumber(@Param("startDate") LocalDate startDate,
+			@Param("toDate") LocalDate toDate, @Param("accountNumber") String accountNumber);
+
+	/**
+	 * @return List<Account>
+	 */
+	@Query(nativeQuery = true, value = "select a.customer.firstName,a.customer.lastName,a.customer.isPrioritize,a.accountNumber,a.balance from Account a where a.balance<10000.0")
+	Optional<List<Account>> getAllUsingAccontBalance();
 
 }

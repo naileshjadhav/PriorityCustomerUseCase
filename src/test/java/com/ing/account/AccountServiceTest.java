@@ -3,6 +3,7 @@
  */
 package com.ing.account;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -89,7 +90,8 @@ class AccountServiceTest {
 		when(accountRepository.findById("SA1001")).thenReturn(Optional.of(new Account("SA1001", "Saving", 1900.0,
 				new Customer(1L, "Nil", "Jadhav", null, false), LocalDate.now(), null)));
 		AccountDto acountDto = accountService.getAccountDetailsByAccountNumber("SA1001");
-		assertEquals(1900.0, acountDto.getBalance());
+		//assertEquals(1900.0, acountDto.getBalance());
+		assertThat(acountDto.getBalance()).isEqualTo(1900.0);
 	}
 
 	@Test
