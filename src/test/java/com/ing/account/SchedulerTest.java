@@ -48,7 +48,7 @@ class SchedulerTest {
 		accounts.add(new Account("SA1001", "Saving", 11000.0, customer1, LocalDate.now(), null));
 		accounts.add(new Account("SA1002", "Saving", 10000.0, customer2, LocalDate.now(), null));
 		accounts.add(new Account("SA1003", "Saving", 12000.0, customer3, LocalDate.now(), null));
-		when(accountRepository.getAllUsingAccontBalance()).thenReturn(Optional.of(accounts));
+		when(accountRepository.findAllByBalance(10000.0)).thenReturn(Optional.of(accounts));
 		List<Customer> customers = new ArrayList<Customer>();
 		customers.add(customer1);
 		customers.add(customer2);

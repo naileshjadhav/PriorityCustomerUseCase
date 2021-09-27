@@ -23,14 +23,14 @@ public interface AccountRepository extends CrudRepository<Account, String> {
 	 * @param accountNumber
 	 * @return
 	 */
-	@Query(nativeQuery = true, value = "select a.accountNumber,a.transactioDate,a.transactioType,a.balance from Account a where a.transactioDate=:startDate and transactioDate=:toDate and accountNumber=:accountNumber")
+	@Query(nativeQuery = true, value = "select a.accountNumber,a.transactionDate,a.transactioType,a.balance from Account a where a.transactionDate=:startDate and transactionDate=:toDate and accountNumber=:accountNumber")
 	Optional<Account> findByTransactionDateAndAccountNumber(@Param("startDate") LocalDate startDate,
 			@Param("toDate") LocalDate toDate, @Param("accountNumber") String accountNumber);
 
 	/**
 	 * @return List<Account>
 	 */
-	@Query(nativeQuery = true, value = "select a.customer.firstName,a.customer.lastName,a.customer.isPrioritize,a.accountNumber,a.balance from Account a where a.balance<10000.0")
-	Optional<List<Account>> getAllUsingAccontBalance();
+	@Query(nativeQuery = true, value = "select a.* from Account a where a.balance<=:balance")
+	Optional<List<Account>> findAllByBalance(@Param("balance") double balance);
 
 }

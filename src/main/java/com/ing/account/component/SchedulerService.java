@@ -5,6 +5,7 @@ package com.ing.account.component;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
@@ -35,6 +36,7 @@ public class SchedulerService {
 	AccountRepository accountRepository;
 	@Autowired
 	CustomerRepository customerRepository;
+	private double balance = 10000.0;
 
 	/**
 	 * @return boolean
@@ -43,12 +45,14 @@ public class SchedulerService {
 	@Scheduled(cron = "0 5 * * * ?")
 	public boolean priorityCustomerSchedule() throws ResourceNotFoundException {
 		log.info("priorityCustomerSchedule started....");
-		List<Account> accounts = accountRepository.getAllUsingAccontBalance()
+		List<Account> accounts = accountRepository.findAllByBalance(balance)
 				.orElseThrow(() -> new ResourceNotFoundException("No account found having balance less than 10k!"));
 		accounts.stream().forEach(
 				account -> log.info("non priorityCustomerSchedule accountNumber found: " + account.getAccountNumber()));
-		List<Customer> customers = accounts.stream().map(e -> new Customer(e.getCustomer().getCustomerId(),
-				e.getCustomer().getFirstName(), e.getCustomer().getLastName(), accounts, false))
+//		List<Customer> customers = accounts.stream().map(account -> new Customer(account.getCustomer().getCustomerId(),
+//				account.getCustomer().getFirstName(), account.getCustomer().getLastName(), accounts, false))
+//				.collect(Collectors.toList());
+		List<Customer> customers = accounts.stream().flatMap(account -> Stream.of(account.getCustomer()))
 				.collect(Collectors.toList());
 		customers.stream().forEach(customer -> log
 				.info("priorityCustomerSchedule customer to non prioritize are: " + customer.getFirstName()));
